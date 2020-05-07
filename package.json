@@ -1,0 +1,81 @@
+{
+  "name": "tacolab-tools",
+  "version": "1.0.0",
+  "description": "The TacoLab Command Line Tools",
+  "main": "./lib/index.js",
+  "bin": {
+    "tacolab": "./lib/bin/tacolab.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf lib",
+    "test": "nyc mocha src/test/**/*.{ts,js}",
+    "prepare": "npm run clean && npm run build -- --build tsconfig.publish.json"
+  },
+  "author": "TacoLab",
+  "license": "MIT",
+  "keywords": [
+    "cdn",
+    "testbench",
+    "sandbox",
+    "cli",
+    "ssl",
+    "cloud",
+    "hosting",
+    "education",
+    "tacolab"
+  ],
+  "files": [
+    "lib"
+  ],
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taco-lab/tacolab-tools.git"
+  },
+  "homepage": "https://github.com/taco-lab/tacolab-tools",
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/",
+      "/log/"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.json"
+      }
+    }
+  },
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "cjson": "^0.5.0",
+    "cli-color": "^2.0.0",
+    "cli-select": "^1.1.2",
+    "commander": "^5.1.0",
+    "configstore": "^5.0.1",
+    "exit-code": "^1.0.2",
+    "leven": "^3.1.0",
+    "triple-beam": "^1.3.0",
+    "tslint": "^6.1.2",
+    "update-notifier": "^4.1.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/cli-color": "^2.0.0",
+    "@types/node": "^13.13.5",
+    "@types/triple-beam": "^1.3.0",
+    "@types/update-notifier": "^4.1.0",
+    "@types/winston": "^2.4.4",
+    "ts-node": "^8.10.1",
+    "typescript": "^3.8.3"
+  }
+}
