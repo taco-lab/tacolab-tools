@@ -17,7 +17,7 @@ const AUTH_CLIENT_ID = 2;
 const AUTH_CLIENT_SECRET = 'VU7hfgUjl5XzKYqgRIkBsyA3QuSh7uIT2ITfEVRK';
 
 module.exports = new Command('login')
-  .description('log the CLI into Firebase')
+  .description('log the CLI into TacoLab')
   .option('--reauth', 'force reauthentication even if already logged in')
   .action(async (options: any) => {
     if (options.nonInteractive) {
@@ -78,7 +78,7 @@ module.exports = new Command('login')
 
     // Authenticate
     const spinner = ora('Authenticating...').start();
-    API.request('POST', '/auth/oauth', credentials).then(async (res) => {
+    API.request(options, 'POST', '/auth/oauth', credentials).then(async (res) => {
         spinner.stop();
 
         // parse response
@@ -92,11 +92,11 @@ module.exports = new Command('login')
         } else if (res && res.error === 'TOTP_REQUIRED') {
             // Ask TOTP
             const totp = await prompt.promptOnce({
-                type: 'number',
+                type: 'input',
                 name: 'totp',
                 message: 'Enter 2-factor authentication 6-digits code (TOTP):',
-                filter: (input: number) => {
-                    if (isNaN(input) || input > 999999) {
+                filter: (input: string) => {
+                    if (input.length !== 6) {
                         return Promise.reject('You should enter valid 6-digits TOTP')
                     }
 
@@ -107,7 +107,7 @@ module.exports = new Command('login')
             // Try another authentication
             credentials.totp = `${totp}`;
             spinner.start();
-            API.request('POST', '/auth/oauth', credentials).then(async (res2) => {
+            API.request(options, 'POST', '/auth/oauth', credentials).then(async (res2) => {
                 spinner.stop();
 
                 // parse response
