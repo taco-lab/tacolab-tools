@@ -13,6 +13,7 @@ export default (client: any) => {
     };
 
     client.help = loadCommand('help');
+    client.login = loadCommand('login');
 
     return client;
 };
