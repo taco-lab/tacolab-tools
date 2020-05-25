@@ -53,6 +53,7 @@ module.exports = new Command('deploy')
     spinner.text = 'Packing files...';
     spinner.start();
 
+    let was_commiting_files = false;
     const git_dir_name = '.tacolab-deploy';
     const git_dir_path = path.join(snowball.absoluteAppDir, git_dir_name, '/');
     try {
@@ -61,7 +62,7 @@ module.exports = new Command('deploy')
 
       logger.debug('Initializing git repository')
       const git: SimpleGit = gitP(snowball.absoluteAppDir);
-      git.silent(true);
+      git.silent(false);
       git.env('GIT_DIR', git_dir_name);
       git.env('GIT_WORK_TREE', snowball.absoluteAppDir);
       git.env('EMAIL', res.user_email);
@@ -87,7 +88,9 @@ module.exports = new Command('deploy')
       }
 
       logger.debug('Commiting files');
-      await git.commit(`cli-${new Date().toISOString()}-${crypto.randomBytes(4).toString('hex')}`);
+      was_commiting_files = true;
+      await git.commit(`cli-${new Date().toISOString()}-${res.token_name.substr(res.token_name.length - 8)}`);
+      was_commiting_files = false;
 
       spinner.text = 'Uploading files...';
       logger.debug('Pushing commit to git server');
@@ -116,6 +119,10 @@ module.exports = new Command('deploy')
     } catch (error) {
       spinner.stop();
       execSync(`rm -rf ${git_dir_path}`);
+      if (was_commiting_files) {
+        logger.debug('Error while trying to commit. Maybe app directory is empty?');
+        utils.logWarning('Commit error: maybe app directory is empty?');
+      }
       throw error;
     }
   });
