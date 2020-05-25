@@ -3,18 +3,18 @@ import * as clc from 'cli-color';
 import { configstore } from '../configstore';
 import * as utils from '../utils';
 import * as logger from '../logger';
+import { Snowball } from '../snowball';
 
 const AUTH_ERROR_MESSAGE = `Command requires authentication, please run ${clc.bold(
     'tacolab login'
 )}`;
 
-export default (options: any) => {
+export default (snowball: Snowball) => {
     let auth_token;
 
     const tokens = configstore.get('tokens');
-    const user = configstore.get('user');
 
-    const tokenOpt = utils.getInheritedOption(options, 'token');
+    const tokenOpt = utils.getInheritedOption(snowball.cmd, 'token');
     if (tokenOpt) {
         logger.debug('> authorizing via --token option');
         auth_token = tokenOpt;
@@ -27,7 +27,4 @@ export default (options: any) => {
     } else {
         throw new TacoLabError(AUTH_ERROR_MESSAGE);
     }
-
-    options.user = user;
-    options.tokens = tokens;
 };

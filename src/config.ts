@@ -1,25 +1,24 @@
 import * as clc from 'cli-color';
 import * as path from 'path';
+import * as fs from 'fs';
 import { TacoLabError } from './error/error';
 import { detectProjectRoot } from './utils';
 const cjson = require('cjson');
 
-// var fsutils = require("./fsutils");
-// var loadCJSON = require("./loadCJSON");
-// var parseBoltRules = require("./parseBoltRules");
-// var { promptOnce } = require("./prompt");
-// var { resolveProjectPath } = require("./projectPath");
-// var utils = require("./utils");
+type Configuration = {
+  project_id: number;
+  topping_id: number;
+};
 
 export default class Config {
     static FILENAME = 'tacolab.json';
 
-    static load = (options: any, allowMissing: boolean = false) => {
-        const pd = detectProjectRoot(options.cwd);
-        if (pd) {
+    static load = (projectRoot: string | undefined, allowMissing: boolean = false) => {
+        if (projectRoot) {
           try {
-            const data = cjson.load(path.join(pd, Config.FILENAME));
-            return new Config(data, options);
+            const configPath = path.join(projectRoot, Config.FILENAME);
+            const data = cjson.load(configPath);
+            return new Config(configPath, data);
           } catch (e) {
             throw new TacoLabError('There was an error loading tacolab.json:\n\n' + e.message, {
               exit: 1,
@@ -28,15 +27,27 @@ export default class Config {
         }
 
         if (allowMissing) {
-          return null;
+          return undefined;
         }
 
-        throw new TacoLabError('Not in a TacoLab app directory (could not locate tacolab.json)', {
+        throw new TacoLabError(`Not in a TacoLab app directory (could not locate tacolab.json).
+Run ${clc.bold('tacolab init')} to initialize topping here.`, {
           exit: 1,
         });
     }
 
-    constructor(protected data: any, options: any) {
+    constructor(protected configPath: string,
+                protected data: Configuration = {project_id: 0, topping_id: 0}) {
 
+    }
+
+    get project_id(): number { return this.data.project_id; }
+    set project_id(project_id: number) { this.data.project_id = project_id; }
+
+    get topping_id(): number { return this.data.topping_id; }
+    set topping_id(topping_id: number) { this.data.topping_id = topping_id; }
+
+    save() {
+      fs.writeFileSync(this.configPath, JSON.stringify(this.data, null, 4), 'utf8');
     }
 }

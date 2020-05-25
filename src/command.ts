@@ -6,9 +6,10 @@ import { getInheritedOption, setupLoggers, detectProjectRoot } from './utils';
 import { configstore } from './configstore';
 import clc = require('cli-color');
 import Config from './config';
+import { Snowball } from './snowball';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ActionFunction = (...args: any[]) => any;
+type ActionFunction = (snowball: Snowball, ...args: any[]) => any;
 
 interface BeforeFunction {
   fn: ActionFunction;
@@ -161,39 +162,34 @@ export class Command {
    * Extends the options with various properties for use in commands.
    * @param options the command options object.
    */
-  private prepare(options: any): void {
-    options = options || {};
-    options.project = getInheritedOption(options, 'project');
-
-    if (!process.stdin.isTTY || getInheritedOption(options, 'nonInteractive')) {
-      options.nonInteractive = true;
-    }
-    // allow override of detected non-interactive with --interactive flag
-    if (getInheritedOption(options, 'interactive')) {
-      options.interactive = true;
-      options.nonInteractive = false;
-    }
-
-    if (getInheritedOption(options, 'debug')) {
-      options.debug = true;
-    }
-
-    if (getInheritedOption(options, 'json')) {
-      options.nonInteractive = true;
-    } else {
-      setupLoggers();
-    }
+  private prepare(snowball: Snowball): void {
+    // Try to determine project root
+    snowball.projectRoot = detectProjectRoot(snowball.cmd.cwd);
 
     // Load tacolab.json configuration
     try {
-      options.config = Config.load(options);
+      snowball.config = Config.load(snowball.projectRoot);
     } catch (e) {
-      options.configError = e;
+      snowball.configError = e;
     }
 
-    // Validate project namespace
-    options.projectRoot = detectProjectRoot(options.cwd);
-    if (options.project) validateProjectNamespace(options.project);
+    if (!process.stdin.isTTY || getInheritedOption(snowball.cmd, 'nonInteractive')) {
+      snowball.interactive = false;
+    }
+    // allow override of detected non-interactive with --interactive flag
+    if (getInheritedOption(snowball.cmd, 'interactive')) {
+      snowball.interactive = true;
+    }
+
+    if (getInheritedOption(snowball.cmd, 'debug')) {
+      snowball.debug = true;
+    }
+
+    if (getInheritedOption(snowball.cmd, 'json')) {
+      snowball.interactive = false;
+    } else {
+      setupLoggers();
+    }
   }
 
   /**
@@ -208,12 +204,16 @@ export class Command {
       if (args.length === 0) {
         args.push({});
       }
-      const options = args[args.length-1];
-      this.prepare(options);
+
+      const cmd = args[args.length-1];
+      const snowball = new Snowball(cmd);
+      this.prepare(snowball);
+
       for (const before of this.befores) {
-        await before.fn(options, ...before.args);
+        await before.fn(snowball, ...before.args);
       }
-      return this.actionFn(...args);
+
+      return this.actionFn(snowball, ...args);
     };
   }
 }

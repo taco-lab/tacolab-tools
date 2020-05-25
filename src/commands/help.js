@@ -8,7 +8,7 @@ var utils = require("../utils");
 
 module.exports = new Command("help [command]")
   .description("display help information")
-  .action(function(commandName) {
+  .action(function(snowball, commandName) {
     var cmd = this.client.getCommand(commandName);
     if (cmd) {
       cmd.outputHelp();

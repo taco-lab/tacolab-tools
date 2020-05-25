@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as winston from 'winston';
 import * as logger from './logger';
 import * as clc from 'cli-color';
+import * as path from 'path';
 import { dirname, resolve } from 'path';
 import { SPLAT } from 'triple-beam';
 import { TacoLabError } from './error/error';
@@ -71,17 +72,33 @@ export function getInheritedOption(options: any, key: string): any {
 /**
  * Search for recursively
  */
-export function detectProjectRoot(cwd: string): string | null {
+export function detectProjectRoot(cwd: string): string | undefined {
   let projectRootDir = cwd || process.cwd();
   while (!fs.existsSync(resolve(projectRootDir, './tacolab.json'))) {
     const parentDir = dirname(projectRootDir);
     if (parentDir === projectRootDir) {
-      return null;
+      return undefined;
     }
     projectRootDir = parentDir;
   }
   return projectRootDir;
 }
+
+/**
+ * Sleep given amount of time
+ */
+export function sleep(ms: number) {
+  return new Promise((r) => {
+    setTimeout(r, ms);
+  });
+}
+
+/**
+ * Determine if a folder is outside another
+ */
+export function isOutside(from: string, to: string) {
+  return path.relative(from, to).match(/^\.\./);
+};
 
 /**
  * Log an info statement with a green checkmark at the start of the line.

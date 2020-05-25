@@ -5,11 +5,12 @@ import { configstore } from '../configstore';
 import * as utils from '../utils';
 import { TacoLabError } from '../error/error';
 import { API } from '../api';
+import { Snowball } from '../snowball';
 
 module.exports = new Command('logout')
   .description('log the CLI out of TacoLab')
-  .action(async (options: any) => {
-    if (options.nonInteractive) {
+  .action(async (snowball: Snowball) => {
+    if (snowball.nonInteractive) {
         throw new TacoLabError(
             'Cannot run login in non-interactive mode.',
             { exit: 1 }
@@ -25,10 +26,8 @@ module.exports = new Command('logout')
         return user;
     }
 
-    options.tokens = tokens;
-
     // Revoke token
-    API.request(options, 'DELETE', '/auth/logout');
+    API.request('DELETE', '/auth/logout');
 
     // Clear config
     configstore.delete('user');

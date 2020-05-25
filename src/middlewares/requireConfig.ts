@@ -1,11 +1,12 @@
 import { TacoLabError } from '../error/error';
+import { Snowball } from '../snowball';
 
-export default (options: any) => {
-    if (options.config) {
+export default (snowball: Snowball) => {
+    if (snowball.config) {
         return Promise.resolve();
     }
     return Promise.reject(
-        options.configError ||
+        snowball.configError ||
         new TacoLabError('Not in a TacoLab project directory (could not locate tacolab.json)', {
             exit: 1,
         })

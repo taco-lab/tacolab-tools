@@ -66,6 +66,10 @@ program.action((_, args) => {
     // If no args, display MotD
     if (!args) {
         Motd.render();
+        console.log(clc.bold(' TacoLab Tools was installed successfully!'));
+        console.log(` To get help, type ${clc.bold('tacolab help')}\n`);
+        console.log(` CLI Version: ${clc.blueBright(pkg.version)}`);
+        console.log('');
         process.exit(0);
     }
 

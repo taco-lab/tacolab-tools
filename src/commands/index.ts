@@ -15,6 +15,8 @@ export default (client: any) => {
     client.help = loadCommand('help');
     client.login = loadCommand('login');
     client.logout = loadCommand('logout');
+    client.init = loadCommand('init');
+    client.deploy = loadCommand('deploy');
 
     return client;
 };

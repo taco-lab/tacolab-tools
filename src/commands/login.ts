@@ -8,19 +8,13 @@ import * as utils from '../utils';
 import { TacoLabError } from '../error/error';
 import * as prompt from '../prompt';
 import { API } from '../api';
-
-/**
- * SERVER CONFIGURATION
- */
-const AUTH_PASSWORD_SALT = '358VemtbdXFv4Sd6MXC45ub2H2nRbM64';
-const AUTH_CLIENT_ID = 2;
-const AUTH_CLIENT_SECRET = 'VU7hfgUjl5XzKYqgRIkBsyA3QuSh7uIT2ITfEVRK';
+import { Snowball } from '../snowball';
 
 module.exports = new Command('login')
   .description('log the CLI into TacoLab')
   .option('--reauth', 'force reauthentication even if already logged in')
-  .action(async (options: any) => {
-    if (options.nonInteractive) {
+  .action(async (snowball: Snowball) => {
+    if (snowball.nonInteractive) {
         throw new TacoLabError(
             'Cannot run login in non-interactive mode.',
             { exit: 1 }
@@ -30,7 +24,7 @@ module.exports = new Command('login')
     const user = configstore.get('user');
     const tokens = configstore.get('tokens');
 
-    if (user && tokens && !options.reauth) {
+    if (user && tokens && !snowball.cmd.reauth) {
       logger.info('Already logged in as', clc.bold(user.email));
       logger.info('Use', clc.bold('tacolab login --reauth'), 'to force reauthentication');
       return user;
@@ -66,19 +60,19 @@ module.exports = new Command('login')
 
     // hash password
     credentials.password = crypto.createHash('sha256')
-                                 .update(`${AUTH_PASSWORD_SALT}${credentials.password}`)
+                                 .update(`${API.AUTH_PASSWORD_SALT}${credentials.password}`)
                                  .digest('hex');
 
     // prepare OAUTH
     credentials.username = credentials.email;
     credentials.grant_type = 'password';
-    credentials.client_id = AUTH_CLIENT_ID;
-    credentials.client_secret = AUTH_CLIENT_SECRET;
+    credentials.client_id = API.AUTH_CLIENT_ID;
+    credentials.client_secret = API.AUTH_CLIENT_SECRET;
     credentials.scope = '*';
 
     // Authenticate
     const spinner = ora('Authenticating...').start();
-    API.request(options, 'POST', '/auth/oauth', credentials).then(async (res) => {
+    API.request('POST', '/auth/oauth', credentials).then(async (res) => {
         spinner.stop();
 
         // parse response
@@ -107,7 +101,7 @@ module.exports = new Command('login')
             // Try another authentication
             credentials.totp = `${totp}`;
             spinner.start();
-            API.request(options, 'POST', '/auth/oauth', credentials).then(async (res2) => {
+            API.request('POST', '/auth/oauth', credentials).then(async (res2) => {
                 spinner.stop();
 
                 // parse response
@@ -117,10 +111,12 @@ module.exports = new Command('login')
                 } else if (res2 && res2.error === 'INVALID_TOTP') {
                     utils.logWarning('Authentication failed (invalid 6-digits TOTP code)');
                 } else {
+                    logger.debug(JSON.stringify(res2));
                     utils.logWarning('Authentication failed');
                 }
             });
         } else {
+            logger.debug(JSON.stringify(res));
             utils.logWarning('Authentication failed');
         }
     });
