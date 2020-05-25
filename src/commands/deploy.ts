@@ -61,7 +61,7 @@ module.exports = new Command('deploy')
 
       logger.debug('Initializing git repository')
       const git: SimpleGit = gitP(snowball.absoluteAppDir);
-      git.silent(false);
+      git.silent(true);
       git.env('GIT_DIR', git_dir_name);
       git.env('GIT_WORK_TREE', snowball.absoluteAppDir);
       git.env('EMAIL', res.user_email);
