@@ -7,6 +7,7 @@ export class Snowball {
     public debug = false;
 
     public projectRoot?: string;
+    public absoluteAppDir?: string;
     public config?: Config;
     public configError?: TacoLabError;
 

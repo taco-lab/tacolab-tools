@@ -1,12 +1,10 @@
-import * as fs from 'fs';
+import * as crypto from 'crypto';
 import * as clc from 'cli-color';
 import * as path from 'path';
 import { Command } from '../command';
 import * as logger from '../logger';
-import { configstore } from '../configstore';
 import * as utils from '../utils';
 import * as ora from 'ora';
-import * as prompt from '../prompt';
 import { TacoLabError } from '../error/error';
 import { API } from '../api';
 import * as requireAuth from '../middlewares/requireAuth';
@@ -23,7 +21,7 @@ module.exports = new Command('deploy')
   .before(requireConfig)
   .before(requireValidTopping)
   .action(async (snowball: Snowball) => {
-    if (!snowball.config || !snowball.topping || !snowball.projectRoot) return;
+    if (!snowball.config || !snowball.topping || !snowball.projectRoot || !snowball.absoluteAppDir) return;
     let label = snowball.topping.name;
 
     logger.info(clc.bold(`\n=== Deploying to '${label}'...\n`));
@@ -42,7 +40,7 @@ module.exports = new Command('deploy')
     //   return;
     // }
 
-    // If no key --> failure
+    // If no token --> failure
     if (!res || !res.token_name || !res.token_key || !res.repository_url || !res.user_email) {
       spinner.stop();
       logger.debug('>> Received invalid deployment response');
@@ -56,17 +54,16 @@ module.exports = new Command('deploy')
     spinner.start();
 
     const git_dir_name = '.tacolab-deploy';
-    const git_dir_path = path.join(snowball.projectRoot, git_dir_name, '/');
-    // const deploy_key_path = path.join(git_dir_path, '.deploy-key');
+    const git_dir_path = path.join(snowball.absoluteAppDir, git_dir_name, '/');
     try {
       logger.debug(`Deleting old ${git_dir_name} directory`);
       execSync(`rm -rf ${git_dir_path}`);
 
       logger.debug('Initializing git repository')
-      const git: SimpleGit = gitP(snowball.projectRoot);
+      const git: SimpleGit = gitP(snowball.absoluteAppDir);
       git.silent(false);
       git.env('GIT_DIR', git_dir_name);
-      git.env('GIT_WORK_TREE', snowball.projectRoot);
+      git.env('GIT_WORK_TREE', snowball.absoluteAppDir);
       git.env('EMAIL', res.user_email);
       git.env('GIT_TRACE', 'true');
       await git.init();
@@ -75,24 +72,25 @@ module.exports = new Command('deploy')
       const repo_parts = res.repository_url.split('://', 2);
       await git.addRemote('tacolab', `${repo_parts[0]}://tacolab:${res.token_key}@${repo_parts[1]}`);
 
-      // logger.debug(`Writing deploy key into ${deploy_key_path}`);
-      // fs.writeFileSync(deploy_key_path, res.key);
-      // fs.chmodSync(deploy_key_path, 660);
-
       logger.debug('Tracking files');
-      await git.add('.')
-      await git.reset([
-        path.join(process.cwd(), 'tacolab-debug.log'),
-        path.join(process.cwd(), 'tacolab.json'),
-        path.join(process.cwd(), '.tacolab-deploy/')
-      ]);
+      await git.add('.');
+      await git.reset([path.join(snowball.absoluteAppDir, '.tacolab-deploy/')]);
+
+      const tacolab_debug_path = path.join(process.cwd(), 'tacolab-debug.log');
+      if (!utils.isOutside(snowball.absoluteAppDir, tacolab_debug_path)) {
+        await git.reset([tacolab_debug_path]);
+      }
+
+      const tacolab_json_path = path.join(snowball.projectRoot, 'tacolab.json');
+      if (!utils.isOutside(snowball.absoluteAppDir, tacolab_json_path)) {
+        await git.reset([tacolab_json_path]);
+      }
 
       logger.debug('Commiting files');
-      await git.commit(`cli-deploy-${new Date().toISOString()}`);
+      await git.commit(`cli-${new Date().toISOString()}-${crypto.randomBytes(4).toString('hex')}`);
 
       spinner.text = 'Uploading files...';
       logger.debug('Pushing commit to git server');
-      // git.env('GIT_SSH_COMMAND', `ssh -i ${deploy_key_path}`);
       await git.push('tacolab', 'master', {
         '--force': true
       });

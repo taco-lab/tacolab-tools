@@ -2,12 +2,12 @@ import * as clc from 'cli-color';
 import * as path from 'path';
 import * as fs from 'fs';
 import { TacoLabError } from './error/error';
-import { detectProjectRoot } from './utils';
 const cjson = require('cjson');
 
 type Configuration = {
   project_id: number;
   topping_id: number;
+  app_dir: string;
 };
 
 export default class Config {
@@ -37,7 +37,7 @@ Run ${clc.bold('tacolab init')} to initialize topping here.`, {
     }
 
     constructor(protected configPath: string,
-                protected data: Configuration = {project_id: 0, topping_id: 0}) {
+                protected data: Configuration = {project_id: 0, topping_id: 0, app_dir: ''}) {
 
     }
 
@@ -46,6 +46,9 @@ Run ${clc.bold('tacolab init')} to initialize topping here.`, {
 
     get topping_id(): number { return this.data.topping_id; }
     set topping_id(topping_id: number) { this.data.topping_id = topping_id; }
+
+    get app_dir(): string { return this.data.app_dir; }
+    set app_dir(app_dir: string) { this.data.app_dir = app_dir; }
 
     save() {
       fs.writeFileSync(this.configPath, JSON.stringify(this.data, null, 4), 'utf8');

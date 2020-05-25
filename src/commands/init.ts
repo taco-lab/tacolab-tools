@@ -1,5 +1,6 @@
 import * as clc from 'cli-color';
 import * as os from 'os';
+import * as fs from 'fs';
 import { Command } from '../command';
 import * as logger from '../logger';
 import { configstore } from '../configstore';
@@ -106,6 +107,37 @@ module.exports = new Command('init')
             value: topping.id,
             name: `${topping.name} [${topping.image_version?.image.name}]`
         }))
+    });
+
+    logger.info(
+        '\n\nGreat! Let\'s define your ' + clc.bold('app directory') + ':',
+        '\n\nThis is the folder (relative to your project directory) that will contain',
+        '\napplication to be deployed with ' + clc.bold('tacolab deploy') + '. If you have a build process',
+        '\nfor your assets, use your build\'s output directoy.',
+        '\nBy default, the app directory is the current one: '+clc.bold(process.cwd()+'\n')
+    );
+
+    // App directory
+    config.app_dir = await prompt.promptOnce({
+        type: 'input',
+        name: 'app_dir',
+        message: 'What do you want to use as your app directory?',
+        default: '.',
+        filter: (input: string) => {
+            if (input.length === 0) {
+                return Promise.reject('You should enter app directory');
+            }
+
+            const input_path = path.join(process.cwd(), input);
+            if (!fs.existsSync(input_path)) {
+                return Promise.reject(`Directory '${input_path}' does not exists`);
+            }
+            if (fs.lstatSync(input_path).isFile()) {
+                return Promise.reject(`'${input_path}' is not a directory`);
+            }
+
+            return Promise.resolve(input);
+        }
     });
 
     logger.info();
